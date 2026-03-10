@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cancel Clinic Rules — AMIONMGR-3306</title>
+<link rel="stylesheet" href="../../assets/dox-prototype.css">
+<style>
+/* ── Prototype nav ── */
+.proto-nav { background: var(--dox-white); border-bottom: var(--dox-border); display: flex; padding: 0 var(--dox-spacing-lg); position: sticky; top: 60px; z-index: 100; }
+.screen { display: none; }
+.screen.is-active { display: block; }
+
+/* ── Rule section blocks (WHEN / THEN / FOR) ── */
+.rule-section {
+  margin-bottom: var(--dox-spacing-sm);
+  padding: var(--dox-spacing-md);
+  border: var(--dox-border);
+  border-radius: var(--dox-radius-md);
+  border-left: 3px solid var(--dox-color-primary);
+  background: var(--dox-gray-100);
+}
+.rule-section__label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--dox-color-primary);
+  margin-bottom: 10px; display: block;
+}
+
+/* ── Rule summary ── */
+.rule-summary {
+  background: var(--dox-color-primary-light); border: 1px solid var(--dox-color-primary);
+  border-radius: var(--dox-radius-md); padding: 8px 12px;
+  font-size: var(--dox-font-size-sm); color: var(--dox-color-primary-dark);
+}
+
+/* ── NEW annotation ── */
+.is-new {
+  outline: 2px solid var(--dox-color-primary);
+  outline-offset: 2px; border-radius: var(--dox-radius-md); position: relative;
+}
+.is-new::after {
+  content: 'NEW';
+  position: absolute; top: -9px; right: -1px;
+  background: var(--dox-color-primary); color: white;
+  font-size: 9px; font-weight: 700; padding: 1px 5px;
+  border-radius: 2px; letter-spacing: 0.06em;
+}
+
+/* ── Level chip row ── */
+.level-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
+
+/* ── Calendar cells ── */
+.cal-wrap { background: var(--dox-white); border: var(--dox-border); border-radius: var(--dox-radius-lg); overflow: hidden; }
+.cal-grid { display: grid; grid-template-columns: 120px repeat(4, 1fr); }
+.cal-th { background: var(--dox-gray-100); border-bottom: var(--dox-border); border-right: var(--dox-border); padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--dox-gray-500); text-transform: uppercase; letter-spacing: 0.04em; text-align: center; }
+.cal-th.name-col { text-align: left; }
+.cal-name { padding: 0 10px; border-bottom: 1px solid var(--dox-gray-200); border-right: var(--dox-border); font-size: var(--dox-font-size-sm); color: #0891b2; font-weight: 500; display: flex; align-items: center; min-height: 44px; }
+.cal-cell { border-bottom: 1px solid var(--dox-gray-200); border-right: var(--dox-border); padding: 4px 5px; min-height: 44px; display: flex; flex-wrap: wrap; gap: 3px; align-content: center; }
+.sched-chip { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: var(--dox-radius-sm); font-size: 11px; font-weight: 500; white-space: nowrap; gap: 4px; }
+.ch-am     { background: #dbeafe; color: #1e40af; }
+.ch-pm     { background: #fce7f3; color: #9d174d; }
+.ch-call   { background: var(--dox-color-warning-light); color: var(--dox-color-warning-dark); }
+.ch-icu    { background: #ede9fe; color: #5b21b6; }
+.ch-cancel { background: var(--dox-gray-200); color: var(--dox-gray-500); text-decoration: line-through; }
+.ch-amber  { background: var(--dox-color-warning-light); color: var(--dox-color-warning-dark); border: 1px dashed var(--dox-color-warning-dark); }
+.ch-green  { background: var(--dox-color-success-light); color: var(--dox-color-success-dark); border: 1px solid #a7f3c0; }
+</style>
+</head>
+<body>
+
+<!-- Amion header -->
+<header class="amion-header">
+  <span class="amion-header__logo">AM<span class="highlight">i</span>ON</span>
+  <div class="amion-header__divider"></div>
+  <button class="amion-header__tab">Schedule: Block</button>
+  <button class="amion-header__tab">Schedule: Clinic</button>
+  <button class="amion-header__tab is-active">Settings</button>
+  <button class="amion-header__tab">Stats</button>
+  <span class="amion-header__badge">Prototype — AMIONMGR-3306</span>
+</header>
+
+<!-- Prototype nav -->
+<nav class="proto-nav">
+  <button class="dox-tab proto-tab is-active" onclick="showScreen('index', this)">Rules Index</button>
+  <button class="dox-tab proto-tab" onclick="showScreen('simple', this)">Simple Cancel <span class="dox-tab__badge">Proposal</span></button>
+  <button class="dox-tab proto-tab" onclick="showScreen('advanced', this)">Advanced Cancel <span class="dox-tab__badge">Proposal</span></button>
+  <button class="dox-tab proto-tab" onclick="showScreen('calendar', this)">Calendar Result</button>
+</nav>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN 1 — Rules Index (Settings context)
+════════════════════════════════════════ -->
+<div id="sc-index" class="screen is-active">
+
+  <div class="dox-shell dox-shell--no-sidebar" style="--dox-shell-sidebar-width:200px; display:flex; min-height:calc(100vh - 100px)">
+
+    <!-- Sidebar -->
+    <aside class="dox-sidebar" style="min-width:200px; border-right:var(--dox-border); padding:var(--dox-spacing-lg) 0">
+      <div class="dox-sidebar__section-label">Settings</div>
+      <div class="dox-sidebar__item">Schedule Settings</div>
+      <div class="dox-sidebar__item is-active">Rules &amp; Templates</div>
+      <div class="dox-sidebar__item">Staff &amp; Assignments</div>
+      <div class="dox-sidebar__item">Notifications</div>
+      <div class="dox-sidebar__item">Integrations</div>
+    </aside>
+
+    <!-- Main -->
+    <main class="dox-main" style="flex:1; padding:var(--dox-spacing-xl)">
+
+      <div class="dox-page-header" style="margin-bottom:var(--dox-spacing-xl)">
+        <div>
+          <div class="amion-breadcrumb">Settings <span class="amion-breadcrumb__sep">›</span> <span class="amion-breadcrumb__current">Rules &amp; Templates</span></div>
+          <h4 class="dox-page-header__title" style="margin-top:4px">Rules &amp; Templates</h4>
+          <p class="dox-page-header__subtitle">Clinic templates and cancel rules for FMI Schedule</p>
+        </div>
+      </div>
+
+      <!-- Clinic Templates section -->
+      <div style="margin-bottom:var(--dox-spacing-xl)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--dox-spacing-md)">
+          <h6 style="margin:0">Clinic Templates</h6>
+          <button class="dox-btn dox-btn--ghost dox-btn--sm">+ Add Template</button>
+        </div>
+        <table class="dox-table" style="width:100%">
+          <thead>
+            <tr>
+              <th>Clinic Service</th>
+              <th>Cadence</th>
+              <th>Clinic Days</th>
+              <th>Applied to</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>AM Ambulatory</td>
+              <td>Every week</td>
+              <td>Mon, Wed</td>
+              <td>24 residents</td>
+              <td><span class="dox-badge dox-badge--success">Active</span></td>
+              <td><button class="dox-btn dox-btn--ghost dox-btn--sm">Edit</button></td>
+            </tr>
+            <tr>
+              <td>FMI Clinic</td>
+              <td>Custom 4-week</td>
+              <td>W1: Mon+Wed · W2: Thu · W3: Mon+Wed · W4: none</td>
+              <td>24 residents</td>
+              <td><span class="dox-badge dox-badge--success">Active</span></td>
+              <td><button class="dox-btn dox-btn--ghost dox-btn--sm">Edit</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Cancel Rules section — NEW -->
+      <div class="is-new" style="padding:var(--dox-spacing-lg);border:var(--dox-border);border-radius:var(--dox-radius-lg)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--dox-spacing-md)">
+          <div>
+            <h6 style="margin:0">Cancel Rules</h6>
+            <p class="dox-text-xs dox-text-muted" style="margin-top:2px">Automatically suppress clinic sessions when specified conditions are met. Canceled sessions appear on the calendar and can be reinstated.</p>
+          </div>
+          <button class="dox-btn dox-btn--primary dox-btn--sm" onclick="showScreen('simple', document.querySelector('.proto-tab:nth-child(2)'))">+ Add Cancel Rule</button>
+        </div>
+        <table class="dox-table" style="width:100%">
+          <thead>
+            <tr>
+              <th>Rule</th>
+              <th>Trigger</th>
+              <th>Cancels</th>
+              <th>Applies to</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Post-call clinic cancel</td>
+              <td>Night Call + following day</td>
+              <td>All clinic sessions</td>
+              <td>All residents</td>
+              <td><span class="dox-badge dox-badge--success">Active</span></td>
+              <td><button class="dox-btn dox-btn--ghost dox-btn--sm">Edit</button></td>
+            </tr>
+            <tr>
+              <td>ICU rotation cancel</td>
+              <td>ICU block rotation</td>
+              <td>All clinic sessions</td>
+              <td>All residents</td>
+              <td><span class="dox-badge dox-badge--success">Active</span></td>
+              <td><button class="dox-btn dox-btn--ghost dox-btn--sm">Edit</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN 2 — Simple cancel rule
+════════════════════════════════════════ -->
+<div id="sc-simple" class="screen">
+  <div class="dox-content" style="max-width:700px">
+
+    <div class="dox-alert dox-alert--info" style="margin-bottom:var(--dox-spacing-lg)">
+      <strong>Simple cancel rule — the 80% case.</strong>
+      Covers call-heavy programs: when a resident is on Night Call or the following day (post-call), their clinic sessions are automatically suppressed. Classic equivalent: "Cancel Clinic" checkboxes in schedule Preferences. ~140 manual deletions/month eliminated at a 20-resident Q3 program.
+    </div>
+
+    <div class="dox-card" style="max-width:480px">
+      <div class="dox-modal__header" style="padding:var(--dox-spacing-lg);border-bottom:var(--dox-border);display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <h5 class="dox-modal__title">Add Cancel Rule</h5>
+          <p class="dox-text-xs dox-text-muted" style="margin-top:2px">FMI Schedule</p>
+        </div>
+        <button class="dox-modal__close">×</button>
+      </div>
+      <div class="dox-modal__body">
+
+        <!-- WHEN -->
+        <div class="rule-section">
+          <span class="rule-section__label">When</span>
+          <div class="dox-form-group">
+            <label class="dox-label">Trigger type</label>
+            <div class="dox-row dox-row--sm">
+              <select class="dox-select" style="width:auto">
+                <option selected>Call assignment</option>
+                <option>Block rotation</option>
+              </select>
+              <select class="dox-select">
+                <option selected>Night Call</option>
+                <option>Long Call</option>
+                <option>Backup Call</option>
+                <option>Any call assignment</option>
+              </select>
+            </div>
+          </div>
+          <div class="dox-form-group" style="margin-bottom:0">
+            <label class="dox-check">
+              <input type="checkbox" checked>
+              Also cancel the following day (post-call)
+            </label>
+          </div>
+        </div>
+
+        <!-- THEN -->
+        <div class="rule-section">
+          <span class="rule-section__label">Then cancel</span>
+          <div class="dox-form-group" style="margin-bottom:0">
+            <div class="dox-stack dox-stack--xs">
+              <label class="dox-check"><input type="radio" name="cancel-w" checked> All clinic sessions</label>
+              <label class="dox-check">
+                <input type="radio" name="cancel-w">
+                Specific clinic
+                <select class="dox-select" style="width:auto;margin-left:6px">
+                  <option>AM Ambulatory</option>
+                  <option>FMI Clinic</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOR -->
+        <div class="rule-section" style="margin-bottom:0">
+          <span class="rule-section__label">For</span>
+          <div class="dox-form-group" style="margin-bottom:0">
+            <div class="dox-stack dox-stack--xs">
+              <label class="dox-check"><input type="radio" name="scope-w" checked> All residents in schedule</label>
+              <label class="dox-check">
+                <input type="radio" name="scope-w">
+                Specific training levels only
+                <div class="level-row">
+                  <span class="dox-badge dox-badge--primary">PGY-1 ×</span>
+                  <span class="dox-badge dox-badge--primary">PGY-2 ×</span>
+                  <button class="dox-btn dox-btn--ghost dox-btn--sm">+ Level</button>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Summary + footer -->
+      <div style="padding: 0 var(--dox-spacing-lg) var(--dox-spacing-sm)">
+        <div class="rule-summary">
+          When a resident is on <strong>Night Call</strong> or the following day (post-call), cancel <strong>all clinic sessions</strong> for <strong>all residents</strong> in FMI Schedule.
+        </div>
+      </div>
+      <div class="dox-modal__footer">
+        <button class="dox-btn dox-btn--ghost">Cancel</button>
+        <button class="dox-btn dox-btn--primary">Save Rule</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN 3 — Advanced cancel rule
+════════════════════════════════════════ -->
+<div id="sc-advanced" class="screen">
+  <div class="dox-content" style="max-width:700px">
+
+    <div class="dox-alert dox-alert--info" style="margin-bottom:var(--dox-spacing-lg)">
+      <strong>Advanced cancel rule — rotation-based trigger.</strong>
+      Covers programs where certain rotations preclude all clinic (e.g., ICU, inpatient night float). Trigger is the block rotation assignment rather than a call assignment. The coordinator can also target specific training levels — e.g., PGY-1s lose clinic on ICU; PGY-3 attendings keep theirs. Classic equivalent: Rule Writer advanced cancel clinic rules.
+    </div>
+
+    <div class="dox-card" style="max-width:480px">
+      <div class="dox-modal__header" style="padding:var(--dox-spacing-lg);border-bottom:var(--dox-border);display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <h5 class="dox-modal__title">Add Cancel Rule</h5>
+          <p class="dox-text-xs dox-text-muted" style="margin-top:2px">FMI Schedule</p>
+        </div>
+        <button class="dox-modal__close">×</button>
+      </div>
+      <div class="dox-modal__body">
+
+        <!-- WHEN -->
+        <div class="rule-section">
+          <span class="rule-section__label">When</span>
+          <div class="dox-form-group">
+            <label class="dox-label">Trigger type</label>
+            <div class="dox-row dox-row--sm">
+              <select class="dox-select" style="width:auto">
+                <option>Call assignment</option>
+                <option selected>Block rotation</option>
+              </select>
+              <select class="dox-select">
+                <option selected>ICU</option>
+                <option>Inpatient Night Float</option>
+                <option>Emergency Medicine</option>
+                <option>Any rotation</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Composite: add a call condition on top of rotation -->
+          <div class="dox-form-group" style="margin-bottom:0">
+            <label class="dox-label dox-text-xs">Also cancel when (optional)</label>
+            <div class="dox-row dox-row--sm" style="align-items:center">
+              <select class="dox-select" style="width:auto">
+                <option selected>any call assignment</option>
+                <option>Night Call only</option>
+                <option>Backup Call only</option>
+              </select>
+              <span class="dox-text-xs dox-text-muted">on the same day</span>
+              <button class="dox-btn dox-btn--ghost dox-btn--sm" style="color:var(--dox-color-danger)">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- THEN -->
+        <div class="rule-section">
+          <span class="rule-section__label">Then cancel</span>
+          <div class="dox-form-group" style="margin-bottom:0">
+            <div class="dox-stack dox-stack--xs">
+              <label class="dox-check"><input type="radio" name="cancel-a" checked> All clinic sessions</label>
+              <label class="dox-check">
+                <input type="radio" name="cancel-a">
+                Specific clinic
+                <select class="dox-select" style="width:auto;margin-left:6px">
+                  <option>AM Ambulatory</option>
+                  <option>FMI Clinic</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOR -->
+        <div class="rule-section" style="margin-bottom:0">
+          <span class="rule-section__label">For</span>
+          <div class="dox-form-group" style="margin-bottom:0">
+            <div class="dox-stack dox-stack--xs">
+              <label class="dox-check"><input type="radio" name="scope-a"> All residents in schedule</label>
+              <label class="dox-check">
+                <input type="radio" name="scope-a" checked>
+                Specific training levels only
+                <div class="level-row">
+                  <span class="dox-badge dox-badge--primary">PGY-1 ×</span>
+                  <span class="dox-badge dox-badge--primary">PGY-2 ×</span>
+                  <button class="dox-btn dox-btn--ghost dox-btn--sm">+ Level</button>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Summary + footer -->
+      <div style="padding: 0 var(--dox-spacing-lg) var(--dox-spacing-sm)">
+        <div class="rule-summary">
+          When a resident is on <strong>ICU rotation</strong>, cancel <strong>all clinic sessions</strong> for <strong>PGY-1 and PGY-2 residents</strong> in FMI Schedule.
+        </div>
+      </div>
+      <div class="dox-modal__footer">
+        <button class="dox-btn dox-btn--ghost">Cancel</button>
+        <button class="dox-btn dox-btn--primary">Save Rule</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN 4 — Calendar result
+════════════════════════════════════════ -->
+<div id="sc-calendar" class="screen">
+  <div class="dox-content" style="max-width:900px">
+
+    <div class="dox-alert dox-alert--info" style="margin-bottom:var(--dox-spacing-lg)">
+      <strong>What cancel rules look like on the clinic calendar.</strong>
+      Canceled sessions are visually distinct from active sessions — coordinators need to notice them for ACGME compliance. Canceled sessions can be reinstated with a single click; reinstatements are logged.
+    </div>
+
+    <!-- Visual options side by side -->
+    <div class="dox-row dox-row--md" style="align-items:flex-start;margin-bottom:var(--dox-spacing-lg)">
+
+      <!-- Option A -->
+      <div style="flex:1">
+        <div class="dox-card">
+          <div class="dox-card__header"><h6 class="dox-card__title">Option A — Strikethrough</h6></div>
+          <div class="dox-card__body">
+            <div class="cal-wrap">
+              <div class="cal-grid">
+                <div class="cal-th name-col">Name</div>
+                <div class="cal-th">Wed (call)</div>
+                <div class="cal-th">Thu ← post-call</div>
+                <div class="cal-th">Fri (ICU starts)</div>
+                <div class="cal-th">Mon (ICU)</div>
+                <div class="cal-name">Baker, T.</div>
+                <div class="cal-cell"><span class="sched-chip ch-call">Night Call</span></div>
+                <div class="cal-cell"><span class="sched-chip ch-cancel">AM Clinic</span></div>
+                <div class="cal-cell"><span class="sched-chip ch-icu">ICU</span></div>
+                <div class="cal-cell"><span class="sched-chip ch-cancel">AM Clinic</span></div>
+                <div class="cal-name">Evans, P.</div>
+                <div class="cal-cell"></div>
+                <div class="cal-cell"><span class="sched-chip ch-am">AM Clinic</span></div>
+                <div class="cal-cell"></div>
+                <div class="cal-cell"><span class="sched-chip ch-am">AM Clinic</span></div>
+              </div>
+            </div>
+            <div style="margin-top:var(--dox-spacing-sm)">
+              <p class="dox-text-xs" style="color:var(--dox-color-success)">✓ Familiar. No new colors.</p>
+              <p class="dox-text-xs dox-text-muted">✗ Blends with "OFF" chips. No reinstatement affordance visible.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Option B — recommended -->
+      <div style="flex:1">
+        <div class="dox-card" style="border-color:var(--dox-color-primary)">
+          <div class="dox-card__header" style="background:var(--dox-color-primary-light)">
+            <h6 class="dox-card__title" style="color:var(--dox-color-primary-dark)">Option B — Warning chip + ↩ icon ★ Recommended</h6>
+          </div>
+          <div class="dox-card__body">
+            <div class="cal-wrap">
+              <div class="cal-grid">
+                <div class="cal-th name-col">Name</div>
+                <div class="cal-th">Wed (call)</div>
+                <div class="cal-th">Thu ← post-call</div>
+                <div class="cal-th">Fri (ICU starts)</div>
+                <div class="cal-th">Mon (ICU)</div>
+                <div class="cal-name">Baker, T.</div>
+                <div class="cal-cell"><span class="sched-chip ch-call">Night Call</span></div>
+                <div class="cal-cell"><span class="sched-chip ch-amber">↩ AM Clinic</span></div>
+                <div class="cal-cell"><span class="sched-chip ch-icu">ICU</span></div>
+                <div class="cal-cell"><span class="sched-chip ch-amber">↩ AM Clinic</span></div>
+                <div class="cal-name">Evans, P.</div>
+                <div class="cal-cell"></div>
+                <div class="cal-cell"><span class="sched-chip ch-am">AM Clinic</span></div>
+                <div class="cal-cell"></div>
+                <div class="cal-cell"><span class="sched-chip ch-am">AM Clinic</span></div>
+              </div>
+            </div>
+            <div style="margin-top:var(--dox-spacing-sm)">
+              <p class="dox-text-xs" style="color:var(--dox-color-success)">✓ Immediately visible. ↩ signals reinstatement. Warning color = ACGME-safe.</p>
+              <p class="dox-text-xs dox-text-muted">✗ Adds a new chip variant to the design system.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reinstatement flow -->
+    <div class="dox-card" style="margin-bottom:var(--dox-spacing-lg)">
+      <div class="dox-card__header"><h6 class="dox-card__title">Reinstatement flow</h6></div>
+      <div class="dox-card__body">
+        <div class="dox-row dox-row--md" style="flex-wrap:wrap;align-items:center">
+          <div style="text-align:center">
+            <div class="dox-text-xs dox-text-muted" style="margin-bottom:4px">Active session</div>
+            <span class="sched-chip ch-am">AM Clinic</span>
+          </div>
+          <span style="color:var(--dox-gray-400);font-size:18px">→</span>
+          <div style="text-align:center">
+            <div class="dox-text-xs dox-text-muted" style="margin-bottom:4px">Rule fires → auto-canceled</div>
+            <span class="sched-chip ch-amber">↩ AM Clinic</span>
+          </div>
+          <span style="color:var(--dox-gray-400);font-size:18px">→</span>
+          <div style="text-align:center">
+            <div class="dox-text-xs dox-text-muted" style="margin-bottom:4px">Coordinator clicks ↩</div>
+            <span style="font-size:11px;background:#111;color:#fff;padding:2px 10px;border-radius:3px">Reinstate for Baker, T.?</span>
+          </div>
+          <span style="color:var(--dox-gray-400);font-size:18px">→</span>
+          <div style="text-align:center">
+            <div class="dox-text-xs dox-text-muted" style="margin-bottom:4px">Reinstated + logged</div>
+            <span class="sched-chip ch-green">AM Clinic ✓</span>
+          </div>
+        </div>
+        <p class="dox-text-xs dox-text-muted" style="margin-top:var(--dox-spacing-sm)">Reinstatements are logged for ACGME compliance. Reinstated sessions show green ✓ — distinct from never-canceled sessions. Cancel rules suppress; delete is permanent. A manually reinstated session remains active even if the rule still applies, until the override is explicitly removed.</p>
+      </div>
+    </div>
+
+    <!-- Rule attribution tooltip concept -->
+    <div class="dox-card">
+      <div class="dox-card__header"><h6 class="dox-card__title">Why was this session canceled? (hover state)</h6></div>
+      <div class="dox-card__body">
+        <p class="dox-text-xs dox-text-muted" style="margin-bottom:var(--dox-spacing-md)">Hovering a canceled ↩ chip shows a tooltip explaining which rule suppressed the session — so the coordinator doesn't have to guess.</p>
+        <div style="display:inline-flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+          <span class="sched-chip ch-amber" style="cursor:pointer">↩ AM Clinic</span>
+          <div style="background:#1f2937;color:white;border-radius:var(--dox-radius-md);padding:8px 12px;font-size:11px;max-width:260px;line-height:1.5">
+            <strong style="color:#f9fafb">Canceled by rule:</strong> Post-call clinic cancel<br>
+            <span style="color:#9ca3af">Baker, T. was on Night Call on Wed — this session was suppressed for the following day (Thu).</span><br>
+            <span style="color:#60a5fa;cursor:pointer;margin-top:4px;display:inline-block">↩ Reinstate this session →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showScreen(id, btn) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('is-active'); });
+  document.querySelectorAll('.proto-tab').forEach(function(t) { t.classList.remove('is-active'); });
+  document.getElementById('sc-' + id).classList.add('is-active');
+  if (btn) btn.classList.add('is-active');
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
