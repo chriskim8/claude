@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Call &amp; Shift Patterns — AMIONMGR-3293</title>
+<link rel="stylesheet" href="../../assets/dox-prototype.css">
+<style>
+/* ── Prototype nav ── */
+.proto-nav { background: var(--dox-white); border-bottom: var(--dox-border); display: flex; padding: 0 var(--dox-spacing-lg); position: sticky; top: 60px; z-index: 100; }
+.screen { display: none; }
+.screen.is-active { display: block; }
+
+/* ── Cadence selector ── */
+.cadence-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--dox-spacing-sm); }
+.cadence-option { cursor: pointer; }
+.cadence-option input[type=radio] { position: absolute; opacity: 0; pointer-events: none; }
+.cadence-card {
+  border: var(--dox-border); border-radius: var(--dox-radius-md);
+  padding: 10px; background: var(--dox-white);
+  transition: border-color 0.1s, background 0.1s;
+  height: 100%;
+}
+.cadence-card:hover { border-color: var(--dox-color-primary); }
+.cadence-option.is-selected .cadence-card {
+  border-color: var(--dox-color-primary);
+  background: var(--dox-color-primary-light);
+}
+.cadence-name { font-size: var(--dox-font-size-sm); font-weight: var(--dox-font-weight-medium); margin-bottom: 1px; }
+.cadence-desc { font-size: 10px; color: var(--dox-color-muted); margin-bottom: 7px; }
+.cadence-strip { display: flex; gap: 2px; flex-wrap: wrap; }
+.cs { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.cs-on  { background: var(--dox-color-primary); }
+.cs-off { background: var(--dox-gray-300); }
+.cs-wknd { background: var(--dox-color-warning); }
+.cs-q { background: #7c3aed; }
+
+/* ── Scope selector ── */
+.scope-selector { display: flex; gap: 0; border: var(--dox-border); border-radius: var(--dox-radius-md); overflow: hidden; }
+.scope-btn {
+  flex: 1; padding: 7px 10px; font-size: var(--dox-font-size-xs);
+  font-family: var(--dox-font-family); cursor: pointer; border: none;
+  background: var(--dox-gray-100); color: var(--dox-color-muted);
+  border-right: var(--dox-border); transition: background 0.1s, color 0.1s;
+  text-align: left; line-height: 1.35;
+}
+.scope-btn:last-child { border-right: none; }
+.scope-btn.is-active { background: var(--dox-white); color: var(--dox-color-body-font); font-weight: var(--dox-font-weight-medium); }
+.scope-btn:hover:not(.is-active) { background: var(--dox-gray-200); }
+.scope-btn .sub { display: block; font-size: 10px; color: var(--dox-color-muted); font-weight: normal; }
+.scope-btn.is-active .sub { color: var(--dox-color-primary); }
+
+/* ── Pattern preview chips ── */
+.preview-dates { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.preview-chip {
+  font-size: 11px; padding: 2px 8px; border-radius: var(--dox-radius-sm);
+  background: var(--dox-color-primary-light); color: var(--dox-color-primary-dark);
+  border: 1px solid var(--dox-color-primary); font-weight: 500;
+}
+.preview-chip--more { background: var(--dox-gray-100); color: var(--dox-color-muted); border-color: var(--dox-gray-300); }
+
+/* ── Rule summary ── */
+.rule-summary {
+  background: var(--dox-color-primary-light); border: 1px solid var(--dox-color-primary);
+  border-radius: var(--dox-radius-md); padding: 8px 12px;
+  font-size: var(--dox-font-size-sm); color: var(--dox-color-primary-dark);
+}
+
+/* ── Conflict card ── */
+.conflict-row { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--dox-gray-200); }
+.conflict-row:last-child { border-bottom: none; }
+.conflict-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dox-color-warning-dark); margin-top: 4px; flex-shrink: 0; }
+
+/* ── NEW annotation ── */
+.is-new {
+  outline: 2px solid var(--dox-color-primary);
+  outline-offset: 2px; border-radius: var(--dox-radius-md); position: relative;
+}
+.is-new::after {
+  content: 'NEW';
+  position: absolute; top: -9px; right: -1px;
+  background: var(--dox-color-primary); color: white;
+  font-size: 9px; font-weight: 700; padding: 1px 5px;
+  border-radius: 2px; letter-spacing: 0.06em;
+}
+
+/* ── Calendar ── */
+.cal-wrap { background: var(--dox-white); border: var(--dox-border); border-radius: var(--dox-radius-lg); overflow: hidden; }
+.cal-grid { display: grid; grid-template-columns: 130px repeat(7, 1fr); }
+.cal-th { background: var(--dox-gray-100); border-bottom: var(--dox-border); border-right: var(--dox-border); padding: 6px 4px; font-size: 10px; font-weight: 600; color: var(--dox-gray-500); text-transform: uppercase; letter-spacing: 0.04em; text-align: center; }
+.cal-th.name-col { text-align: left; padding-left: 8px; }
+.cal-th.wknd { background: var(--dox-gray-200); }
+.cal-name { padding: 0 8px; border-bottom: 1px solid var(--dox-gray-200); border-right: var(--dox-border); font-size: var(--dox-font-size-sm); color: #0891b2; font-weight: 500; display: flex; align-items: center; min-height: 40px; }
+.cal-cell { border-bottom: 1px solid var(--dox-gray-200); border-right: var(--dox-border); padding: 3px 3px; min-height: 40px; display: flex; flex-wrap: wrap; gap: 2px; align-content: center; }
+.cal-cell.wknd { background: var(--dox-gray-50, #fafafa); }
+.sched-chip { display: inline-flex; align-items: center; padding: 2px 5px; border-radius: var(--dox-radius-sm); font-size: 10px; font-weight: 500; white-space: nowrap; }
+.ch-call  { background: #ede9fe; color: #5b21b6; }
+.ch-long  { background: #dbeafe; color: #1e40af; }
+.ch-block { background: var(--dox-gray-200); color: var(--dox-gray-700); }
+.ch-new   { background: var(--dox-color-success-light); color: var(--dox-color-success-dark); border: 1px solid #a7f3c0; }
+.ch-conflict { background: var(--dox-color-warning-light); color: var(--dox-color-warning-dark); border: 1px dashed var(--dox-color-warning-dark); }
+</style>
+</head>
+<body>
+
+<header class="amion-header">
+  <span class="amion-header__logo">AM<span class="highlight">i</span>ON</span>
+  <div class="amion-header__divider"></div>
+  <button class="amion-header__tab is-active">Schedule: Block</button>
+  <button class="amion-header__tab">Schedule: Clinic</button>
+  <button class="amion-header__tab">Settings</button>
+  <button class="amion-header__tab">Stats</button>
+  <span class="amion-header__badge">Prototype — AMIONMGR-3293</span>
+</header>
+
+<nav class="proto-nav">
+  <button class="dox-tab proto-tab is-active" onclick="showScreen('index', this)">Pattern Index</button>
+  <button class="dox-tab proto-tab" onclick="showScreen('define', this)">Define Pattern <span class="dox-tab__badge">Proposal</span></button>
+  <button class="dox-tab proto-tab" onclick="showScreen('apply', this)">Apply Pattern <span class="dox-tab__badge">Proposal</span></button>
+  <button class="dox-tab proto-tab" onclick="showScreen('calendar', this)">Calendar Result</button>
+</nav>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN 1 — Pattern Index
+════════════════════════════════════════ -->
+<div id="sc-index" class="screen is-active">
+  <div class="dox-shell" style="display:flex; min-height:calc(100vh - 100px)">
+    <aside class="dox-sidebar" style="min-width:200px; border-right:var(--dox-border); padding:var(--dox-spacing-lg) 0">
+      <div class="dox-sidebar__section-label">Settings</div>
+      <div class="dox-sidebar__item">Schedule Settings</div>
+      <div class="dox-sidebar__item is-active">Rules &amp; Templates</div>
+      <div class="dox-sidebar__item">Staff &amp; Assignments</div>
+      <div class="dox-sidebar__item">Notifications</div>
+    </aside>
+    <main class="dox-main" style="flex:1; padding:var(--dox-spacing-xl)">
+      <div class="dox-page-header" style="margin-bottom:var(--dox-spacing-xl)">
+        <div>
+          <div class="amion-breadcrumb">Settings <span class="amion-breadcrumb__sep">›</span> <span class="amion-breadcrumb__current">Rules &amp; Templates</span></div>
+          <h4 class="dox-page-header__title" style="margin-top:4px">Rules &amp; Templates</h4>
+          <p class="dox-page-header__subtitle">IM Block Schedule — Patterns, templates, and cancel rules</p>
+        </div>
+      </div>
+
+      <!-- Call/Shift Patterns — NEW section -->
+      <div class="is-new" style="padding:var(--dox-spacing-lg);border:var(--dox-border);border-radius:var(--dox-radius-lg);margin-bottom:var(--dox-spacing-xl)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--dox-spacing-md)">
+          <div>
+            <h6 style="margin:0">Call &amp; Shift Patterns</h6>
+            <p class="dox-text-xs dox-text-muted" style="margin-top:2px">Named repeating call structures. Apply to residents once — patterns generate assignments on demand. Edit a pattern and all residents update automatically.</p>
+          </div>
+          <button class="dox-btn dox-btn--primary dox-btn--sm" onclick="showScreen('define', document.querySelector('.proto-tab:nth-child(2)'))">+ New Pattern</button>
+        </div>
+        <table class="dox-table" style="width:100%">
+          <thead>
+            <tr>
+              <th>Pattern name</th>
+              <th>Service</th>
+              <th>Cadence</th>
+              <th>Scope</th>
+              <th>Applied to</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Q3 Night Call — IM Block</strong></td>
+              <td>Night Call</td>
+              <td>Q3 (every 3rd night)</td>
+              <td>Rotation-scoped: IM Block</td>
+              <td>18 residents</td>
+              <td><span class="dox-badge dox-badge--success">Active</span></td>
+              <td><button class="dox-btn dox-btn--ghost dox-btn--sm">Edit</button></td>
+            </tr>
+            <tr>
+              <td><strong>7-on / 7-off Night Float</strong></td>
+              <td>Night Float</td>
+              <td>Alternate week</td>
+              <td>Rotation-scoped: Night Float Block</td>
+              <td>8 residents</td>
+              <td><span class="dox-badge dox-badge--success">Active</span></td>
+              <td><button class="dox-btn dox-btn--ghost dox-btn--sm">Edit</button></td>
+            </tr>
+            <tr>
+              <td><strong>Weekend Backup Call</strong></td>
+              <td>Weekend Call</td>
+              <td>Weekend only (Sat + Sun)</td>
+              <td>Full Academic Year</td>
+              <td>6 residents</td>
+              <td><span class="dox-badge dox-badge--warning">Draft</span></td>
+              <td><button class="dox-btn dox-btn--ghost dox-btn--sm">Edit</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Clinic Templates — existing -->
+      <div style="margin-bottom:var(--dox-spacing-xl)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--dox-spacing-md)">
+          <h6 style="margin:0">Clinic Templates</h6>
+          <button class="dox-btn dox-btn--ghost dox-btn--sm">+ Add Template</button>
+        </div>
+        <table class="dox-table" style="width:100%">
+          <thead><tr><th>Service</th><th>Cadence</th><th>Applied to</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>AM Ambulatory</td><td>Every week — Mon, Wed</td><td>18 residents</td><td><span class="dox-badge dox-badge--success">Active</span></td><td><button class="dox-btn dox-btn--ghost dox-btn--sm">Edit</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Cancel Rules — existing -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--dox-spacing-md)">
+          <h6 style="margin:0">Cancel Rules</h6>
+          <button class="dox-btn dox-btn--ghost dox-btn--sm">+ Add Cancel Rule</button>
+        </div>
+        <table class="dox-table" style="width:100%">
+          <thead><tr><th>Rule</th><th>Trigger</th><th>Cancels</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Post-call clinic cancel</td><td>Night Call + following day</td><td>All clinic sessions</td><td><span class="dox-badge dox-badge--success">Active</span></td><td><button class="dox-btn dox-btn--ghost dox-btn--sm">Edit</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN 2 — Define Pattern
+════════════════════════════════════════ -->
+<div id="sc-define" class="screen">
+  <div class="dox-content" style="max-width:760px">
+
+    <div class="dox-alert dox-alert--info" style="margin-bottom:var(--dox-spacing-lg)">
+      <strong>Define a named call/shift pattern.</strong>
+      Patterns are defined once and applied to multiple residents. The cadence selector shows a visual 14-day preview of the call structure — coordinators choose by recognition, not by configuring numbers. On-demand evaluation: editing a pattern instantly updates all residents it's applied to. AMIONMGR-3293 · Spike gate: AMIONMGR-3308.
+    </div>
+
+    <div class="dox-card" style="max-width:660px">
+      <div class="dox-modal__header" style="padding:var(--dox-spacing-lg);border-bottom:var(--dox-border);display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <h5 class="dox-modal__title">New Call / Shift Pattern</h5>
+          <p class="dox-text-xs dox-text-muted" style="margin-top:2px">IM Block Schedule</p>
+        </div>
+        <button class="dox-modal__close">×</button>
+      </div>
+      <div class="dox-modal__body">
+
+        <!-- Name -->
+        <div class="dox-form-group">
+          <label class="dox-label">Pattern name</label>
+          <input type="text" class="dox-input" value="Q3 Night Call — IM Block" style="max-width:340px">
+        </div>
+
+        <!-- Service -->
+        <div class="dox-form-group">
+          <label class="dox-label">Call / Shift service</label>
+          <select class="dox-select" style="width:auto">
+            <option selected>Night Call</option>
+            <option>Long Call</option>
+            <option>Weekend Call</option>
+            <option>Night Float</option>
+            <option>Day Shift</option>
+          </select>
+        </div>
+
+        <!-- Cadence selector — visual -->
+        <div class="dox-form-group is-new">
+          <label class="dox-label">Cadence</label>
+          <p class="dox-text-xs dox-text-muted" style="margin-bottom:10px">Each strip shows the 14-day pattern. Blue = call night.</p>
+          <div class="cadence-grid">
+
+            <!-- Q3 — selected -->
+            <label class="cadence-option is-selected" onclick="selectCadence(this)">
+              <input type="radio" name="cadence" value="q3" checked>
+              <div class="cadence-card">
+                <div class="cadence-name">Q3 — every 3rd night</div>
+                <div class="cadence-desc">Standard IM / surgery overnight call</div>
+                <div class="cadence-strip">
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span>
+                </div>
+              </div>
+            </label>
+
+            <!-- Q2 -->
+            <label class="cadence-option" onclick="selectCadence(this)">
+              <input type="radio" name="cadence" value="q2">
+              <div class="cadence-card">
+                <div class="cadence-name">Q2 — every other night</div>
+                <div class="cadence-desc">Lighter rotations, short blocks</div>
+                <div class="cadence-strip">
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span>
+                </div>
+              </div>
+            </label>
+
+            <!-- Q4 -->
+            <label class="cadence-option" onclick="selectCadence(this)">
+              <input type="radio" name="cadence" value="q4">
+              <div class="cadence-card">
+                <div class="cadence-name">Q4 — every 4th night</div>
+                <div class="cadence-desc">Elective / lower-acuity rotations</div>
+                <div class="cadence-strip">
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span>
+                  <span class="cs cs-on"></span><span class="cs cs-off"></span>
+                </div>
+              </div>
+            </label>
+
+            <!-- 7-on/7-off -->
+            <label class="cadence-option" onclick="selectCadence(this)">
+              <input type="radio" name="cadence" value="altweek">
+              <div class="cadence-card">
+                <div class="cadence-name">7-on / 7-off</div>
+                <div class="cadence-desc">Alternate week · Night float</div>
+                <div class="cadence-strip">
+                  <span class="cs cs-on"></span><span class="cs cs-on"></span><span class="cs cs-on"></span><span class="cs cs-on"></span><span class="cs cs-on"></span><span class="cs cs-on"></span><span class="cs cs-on"></span>
+                  <span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span>
+                </div>
+              </div>
+            </label>
+
+            <!-- Weekend only -->
+            <label class="cadence-option" onclick="selectCadence(this)">
+              <input type="radio" name="cadence" value="weekend">
+              <div class="cadence-card">
+                <div class="cadence-name">Weekend only</div>
+                <div class="cadence-desc">Sat + Sun (± Fri) every week</div>
+                <div class="cadence-strip">
+                  <span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-wknd"></span><span class="cs cs-wknd"></span>
+                  <span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-wknd"></span><span class="cs cs-wknd"></span>
+                </div>
+              </div>
+            </label>
+
+            <!-- Custom -->
+            <label class="cadence-option" onclick="selectCadence(this)">
+              <input type="radio" name="cadence" value="custom">
+              <div class="cadence-card">
+                <div class="cadence-name">Custom multi-week</div>
+                <div class="cadence-desc">Define a 2–6 week cycle with per-week variation</div>
+                <div class="cadence-strip" style="align-items:center">
+                  <span class="cs cs-q"></span><span class="cs cs-q"></span><span class="cs cs-off"></span><span class="cs cs-q"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-q"></span>
+                  <span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-q"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-off"></span><span class="cs cs-q"></span>
+                </div>
+              </div>
+            </label>
+
+          </div>
+        </div>
+
+        <!-- Scope -->
+        <div class="dox-form-group">
+          <label class="dox-label">Scope — when does this pattern apply?</label>
+          <div class="scope-selector">
+            <button class="scope-btn" onclick="selectScope(this)">
+              Full Academic Year
+              <span class="sub">Through Jun 2026</span>
+            </button>
+            <button class="scope-btn is-active" onclick="selectScope(this)">
+              Rotation-scoped
+              <span class="sub">During a specific block service</span>
+            </button>
+            <button class="scope-btn" onclick="selectScope(this)">
+              Custom date range
+              <span class="sub">Choose start + end dates</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Rotation-scoped trigger (visible when rotation-scoped selected) -->
+        <div class="dox-form-group" style="padding:var(--dox-spacing-md);background:var(--dox-gray-100);border:var(--dox-border);border-radius:var(--dox-radius-md);border-left:3px solid var(--dox-color-primary)">
+          <label class="dox-label" style="font-size:10px;color:var(--dox-color-primary);letter-spacing:0.07em">FIRES WHEN RESIDENT IS ASSIGNED TO</label>
+          <select class="dox-select" style="width:auto">
+            <option selected>IM Block</option>
+            <option>ICU</option>
+            <option>Night Float Block</option>
+            <option>Any block service</option>
+          </select>
+          <p class="dox-text-xs dox-text-muted" style="margin-top:6px;margin-bottom:0">Pattern activates automatically when a resident is assigned to this block service. No separate date entry required.</p>
+        </div>
+
+        <!-- Pattern preview -->
+        <div class="dox-form-group" style="margin-bottom:0">
+          <label class="dox-label">Pattern preview — first 8 call nights from Jan 5, 2026</label>
+          <div class="preview-dates">
+            <span class="preview-chip">Mon Jan 5</span>
+            <span class="preview-chip">Thu Jan 8</span>
+            <span class="preview-chip">Sun Jan 11</span>
+            <span class="preview-chip">Wed Jan 14</span>
+            <span class="preview-chip">Sat Jan 17</span>
+            <span class="preview-chip">Tue Jan 20</span>
+            <span class="preview-chip">Fri Jan 23</span>
+            <span class="preview-chip">Mon Jan 26</span>
+            <span class="preview-chip--more preview-chip">+38 more through Jun 2026</span>
+          </div>
+          <p class="dox-text-xs dox-text-muted" style="margin-top:6px">Anchor date is the first day of each resident's IM Block rotation. Dates shift automatically per resident.</p>
+        </div>
+
+      </div>
+
+      <div style="padding: 0 var(--dox-spacing-lg) var(--dox-spacing-sm)">
+        <div class="rule-summary" style="background:var(--dox-color-primary-light);border:1px solid var(--dox-color-primary);border-radius:var(--dox-radius-md);padding:8px 12px;font-size:var(--dox-font-size-sm);color:var(--dox-color-primary-dark)">
+          <strong>Q3 Night Call — IM Block</strong>: every 3rd night on Night Call, starting the first day of each resident's IM Block rotation, through end of rotation.
+        </div>
+      </div>
+      <div class="dox-modal__footer">
+        <button class="dox-btn dox-btn--ghost">Cancel</button>
+        <button class="dox-btn dox-btn--ghost" onclick="showScreen('apply', document.querySelector('.proto-tab:nth-child(3)'))">Save &amp; Apply to Residents →</button>
+        <button class="dox-btn dox-btn--primary">Save Pattern</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN 3 — Apply Pattern
+════════════════════════════════════════ -->
+<div id="sc-apply" class="screen">
+  <div class="dox-content" style="max-width:700px">
+
+    <div class="dox-alert dox-alert--info" style="margin-bottom:var(--dox-spacing-lg)">
+      <strong>Apply a pattern to residents.</strong>
+      Select who gets this pattern. For rotation-scoped patterns, the anchor date comes from each resident's block assignment — no manual date entry per resident. Conflicts are surfaced before confirmation, not silently.
+    </div>
+
+    <div class="dox-card" style="max-width:520px">
+      <div class="dox-modal__header" style="padding:var(--dox-spacing-lg);border-bottom:var(--dox-border);display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <h5 class="dox-modal__title">Apply Pattern to Residents</h5>
+          <p class="dox-text-xs dox-text-muted" style="margin-top:2px">IM Block Schedule</p>
+        </div>
+        <button class="dox-modal__close">×</button>
+      </div>
+      <div class="dox-modal__body">
+
+        <!-- Pattern -->
+        <div class="dox-form-group">
+          <label class="dox-label">Pattern</label>
+          <select class="dox-select">
+            <option selected>Q3 Night Call — IM Block</option>
+            <option>7-on / 7-off Night Float</option>
+            <option>Weekend Backup Call</option>
+          </select>
+        </div>
+
+        <!-- Apply to -->
+        <div class="dox-form-group">
+          <label class="dox-label">Apply to</label>
+          <div class="scope-selector">
+            <button class="scope-btn is-active" onclick="selectScope(this)">
+              All residents in IM Block
+              <span class="sub">18 residents</span>
+            </button>
+            <button class="scope-btn" onclick="selectScope(this)">
+              Specific training levels
+              <span class="sub">PGY-1, PGY-2, PGY-3</span>
+            </button>
+            <button class="scope-btn" onclick="selectScope(this)">
+              Individual residents
+              <span class="sub">Pick from list</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Anchor date -->
+        <div class="dox-form-group">
+          <label class="dox-label">Anchor date — when does the pattern start?</label>
+          <div class="dox-stack dox-stack--xs">
+            <label class="dox-check"><input type="radio" name="anchor" checked> Start of each resident's IM Block rotation <span class="dox-text-xs dox-text-muted">(recommended — shifts per resident)</span></label>
+            <label class="dox-check">
+              <input type="radio" name="anchor">
+              Fixed date for all residents
+              <input type="date" class="dox-input" value="2026-01-05" style="width:auto;margin-left:6px">
+            </label>
+          </div>
+        </div>
+
+        <!-- Conflict detection -->
+        <div class="dox-form-group" style="margin-bottom:0">
+          <label class="dox-label">Conflict check</label>
+          <div class="dox-card" style="border-color:var(--dox-color-warning-dark)">
+            <div class="dox-card__header" style="background:var(--dox-color-warning-light);padding:8px 12px">
+              <h6 class="dox-card__title" style="color:var(--dox-color-warning-dark);font-size:var(--dox-font-size-sm)">⚠ 3 conflicts detected — review before applying</h6>
+            </div>
+            <div class="dox-card__body" style="padding:10px 12px">
+              <div class="conflict-row">
+                <div class="conflict-dot"></div>
+                <div class="dox-text-xs"><strong>Baker, T.</strong> — Tue Jan 6: existing Long Call assignment overlaps with Q3 pattern night. Which takes precedence?</div>
+              </div>
+              <div class="conflict-row">
+                <div class="conflict-dot"></div>
+                <div class="dox-text-xs"><strong>Evans, P.</strong> — Thu Jan 8: pattern call night falls the day after an existing block assignment end date. Rest gap may be insufficient.</div>
+              </div>
+              <div class="conflict-row">
+                <div class="conflict-dot"></div>
+                <div class="dox-text-xs"><strong>2 residents</strong> — pattern generates a call night on a post-call clinic day. Cancel clinic rule will suppress the clinic session automatically.</div>
+              </div>
+              <div style="margin-top:8px">
+                <label class="dox-check" style="font-size:var(--dox-font-size-xs)">
+                  <input type="checkbox" checked>
+                  Apply anyway — I'll resolve conflicts manually after reviewing
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="padding: 0 var(--dox-spacing-lg) var(--dox-spacing-sm)">
+        <div class="rule-summary" style="background:var(--dox-color-primary-light);border:1px solid var(--dox-color-primary);border-radius:var(--dox-radius-md);padding:8px 12px;font-size:var(--dox-font-size-sm);color:var(--dox-color-primary-dark)">
+          Will generate <strong>~846 Night Call assignments</strong> for <strong>18 residents</strong> following the Q3 cadence, starting the first day of each resident's IM Block rotation through end of rotation.
+        </div>
+      </div>
+      <div class="dox-modal__footer">
+        <button class="dox-btn dox-btn--ghost">Cancel</button>
+        <button class="dox-btn dox-btn--primary" onclick="showScreen('calendar', document.querySelector('.proto-tab:nth-child(4)'))">Apply Pattern</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN 4 — Calendar Result
+════════════════════════════════════════ -->
+<div id="sc-calendar" class="screen">
+  <div class="dox-content" style="max-width:960px">
+
+    <div class="dox-alert dox-alert--info" style="margin-bottom:var(--dox-spacing-lg)">
+      <strong>Calendar after pattern application.</strong>
+      Q3 Night Call pattern applied to 18 residents. Assignments appear on the block schedule across the rotation. Green = newly generated by pattern. Yellow dashed = detected conflict (Baker, T. — Jan 6 overlap shown here). A resident with an existing assignment on a pattern night shows the conflict inline.
+    </div>
+
+    <!-- Two-week calendar snippet -->
+    <div class="cal-wrap" style="margin-bottom:var(--dox-spacing-lg)">
+      <div class="cal-grid">
+        <div class="cal-th name-col">IM Block · Jan 2026</div>
+        <div class="cal-th">Mon 5</div>
+        <div class="cal-th">Tue 6</div>
+        <div class="cal-th">Wed 7</div>
+        <div class="cal-th">Thu 8</div>
+        <div class="cal-th">Fri 9</div>
+        <div class="cal-th wknd">Sat 10</div>
+        <div class="cal-th wknd">Sun 11</div>
+
+        <!-- Baker, T — conflict on Tue Jan 6 -->
+        <div class="cal-name">Baker, T.</div>
+        <div class="cal-cell"><span class="sched-chip ch-new">Night Call ✦</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-conflict">⚠ Long Call</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell wknd"></div>
+        <div class="cal-cell wknd"></div>
+
+        <!-- Evans, P — clean Q3 -->
+        <div class="cal-name">Evans, P.</div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-new">Night Call ✦</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell wknd"></div>
+        <div class="cal-cell wknd"></div>
+
+        <!-- Chen, M -->
+        <div class="cal-name">Chen, M.</div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell wknd"></div>
+        <div class="cal-cell wknd"><span class="sched-chip ch-new">Night Call ✦</span></div>
+
+        <!-- Row 4 -->
+        <div class="cal-name">Park, S.</div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-new">Night Call ✦</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell wknd"></div>
+        <div class="cal-cell wknd"></div>
+
+        <!-- Row 5 — rest gap warning -->
+        <div class="cal-name">Morris, D.</div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell"><span class="sched-chip ch-block">IM Block</span></div>
+        <div class="cal-cell wknd"><span class="sched-chip ch-new">Night Call ✦</span></div>
+        <div class="cal-cell wknd"></div>
+      </div>
+    </div>
+
+    <!-- Legend + notes -->
+    <div class="dox-row dox-row--md" style="align-items:flex-start">
+      <div style="flex:1">
+        <div class="dox-card">
+          <div class="dox-card__header"><h6 class="dox-card__title">Legend</h6></div>
+          <div class="dox-card__body">
+            <div class="dox-stack dox-stack--xs">
+              <div style="display:flex;align-items:center;gap:8px"><span class="sched-chip ch-new">Night Call ✦</span> <span class="dox-text-xs dox-text-muted">Generated by Q3 pattern (new)</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span class="sched-chip ch-block">IM Block</span> <span class="dox-text-xs dox-text-muted">Pre-existing block assignment</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span class="sched-chip ch-conflict">⚠ Long Call</span> <span class="dox-text-xs dox-text-muted">Conflict — existing assignment on pattern night</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="dox-card">
+          <div class="dox-card__header"><h6 class="dox-card__title">Pattern behavior</h6></div>
+          <div class="dox-card__body">
+            <div class="dox-stack dox-stack--xs">
+              <p class="dox-text-xs"><strong>On-demand evaluation</strong> — pattern assignments are resolved at render/export time. Edit the pattern and all residents update without re-applying.</p>
+              <p class="dox-text-xs"><strong>Override tracking</strong> — manual changes to a pattern-generated assignment are flagged as overrides, so deviations are visible at a glance.</p>
+              <p class="dox-text-xs"><strong>Cancel rule integration</strong> — if a post-call cancel clinic rule is active, it fires automatically on call nights generated by this pattern.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showScreen(id, btn) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('is-active'); });
+  document.querySelectorAll('.proto-tab').forEach(function(t) { t.classList.remove('is-active'); });
+  document.getElementById('sc-' + id).classList.add('is-active');
+  if (btn) btn.classList.add('is-active');
+  window.scrollTo(0, 0);
+}
+function selectCadence(label) {
+  document.querySelectorAll('.cadence-option').forEach(function(l) { l.classList.remove('is-selected'); });
+  label.classList.add('is-selected');
+}
+function selectScope(btn) {
+  var parent = btn.closest('.scope-selector');
+  parent.querySelectorAll('.scope-btn').forEach(function(b) { b.classList.remove('is-active'); });
+  btn.classList.add('is-active');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr view 1677 --repo doximity/amion-api)",
+      "Bash(curl -s -u \"skim@doximity.com:ATATT3xFfGF0y7zF7LhR7mc5rSbCer-4SzGZlU4QpMZTOUG5wMTsTAYcRGqSF8hT0fnRu3NvX07SSZVAMqvXeHAyaYjQ8F9pizo-VPDuMxAJCDDa7RIw9yhsDwB3RmmvV7GT4Cb49o0ZQNvq1Xs1JH_cqZlWwXglr_fBgF6y_Fue1ZUiw4PORis=5572D32C\" \"https://doximity.atlassian.net/rest/api/3/project/MOFONETAM/issuetypes\")",
+      "Read(//tmp/**)",
+      "Read(//private/tmp/**)",
+      "Bash(python3 -:*)",
+      "Read(//Users/chriskim/.claude/**)",
+      "Bash(python3 -c \":*)",
+      "Read(//Users/chriskim/google-services/**)",
+      "Bash(source ~/.config/.jira/credentials)",
+      "Bash(curl -s -u \"$JIRA_EMAIL:$JIRA_TOKEN\" \"https://doximity.atlassian.net/rest/api/3/search?jql=project%3DAMIONMGR%20AND%20text%20~%20%22cancel%20clinic%22&fields=summary,status,description&maxResults=5\")"
+    ]
+  }
+}
