@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "glean": {
+      "command": "uvx",
+      "args": ["glean-mcp"]
+    }
+  }
+}
