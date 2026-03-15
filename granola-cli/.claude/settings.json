@@ -32,7 +32,19 @@
       "WebSearch"
     ]
   },
+  "enabledMcpjsonServers": ["glean"],
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '=== Granola CLI Web Session Started ===' && node --version && npm --version && echo 'Tip: Run npm ci if dependencies need installation' || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
